@@ -46,7 +46,7 @@ Likewise, for deallocation functions:
 
 I also added a breakpoint to trace the **new_slab** function, that notifies the user when a fresh slab is allocated. This can be useful for monitoring the memory usage of the system, or to set up the environment for an exploit (e.g. the overflow-into-free-object-metadata technique).
 
-### Filtering
+### Filtering
 
 Filtering defines which SLUB events are notified to the user.
 
