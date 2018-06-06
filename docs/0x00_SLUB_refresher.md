@@ -6,9 +6,6 @@
 * [SLUB](#slub)
     * [Examples](#examples)
 
-This chapter is intended more as a theory background, or refresher, about the general functioning of SLUB.
-No practical help in using the tool is provided, just an in-depth explanation of how allocations and deallocations work in kernel land.
-
 ## Why the need of a kernel allocator?
 
 The smallest unit of data for memory management in the virtual memory of an OS is the page and its traditional size for most architectures is 4KB.

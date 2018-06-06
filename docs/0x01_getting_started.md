@@ -5,8 +5,6 @@
     * [Quality of life improvements](#quality-of-life-improvements)
 * [Connecting to gdb](#connecting-to-gdb)
 
-The main goal of this stage is to create a local machine that emulates the target system you want to exploit, reverse, or work on.
-
 My choice was to employ a Virtual Machine under the QEMU virtualizer.
 
 At this point, there are three options:

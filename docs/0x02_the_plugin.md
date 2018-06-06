@@ -7,8 +7,7 @@
     * [Tracing](#tracing)
     * [Walking](#walking)
 * [Further work](#further-work)
-
-This chapter will get you familiar with the *salt* tool for tracing dynamic allocations in the kernel.  
+ 
 From now on, it will assumed that you followed the setup in the previous chapter, or that you have your own working environment.
 
 After opening gdb, connecting it to the kernel, and importing the symbol file, you can initialize the plugin by typing `source salt.py`.
