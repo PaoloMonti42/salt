@@ -2,17 +2,50 @@
 
 ## Table of contents
 * [General functioning](#general-functioning)
-    * [Filtering](#filtering)
-    * [Recording](#recording)
-    * [Tracing](#tracing)
-    * [Walking](#walking)
+* [Filtering](#filtering)
+* [Recording](#recording)
+* [Tracing](#tracing)
+* [Walking](#walking)
 * [Further work](#further-work)
- 
+
 From now on, it will assumed that you followed the setup in the previous chapter, or that you have your own working environment.
 
 After opening gdb, connecting it to the kernel, and importing the symbol file, you can initialize the plugin by typing `source salt.py`.
 
 All the commands in the tool are now available. Type `salt help` for a quick summary. Some more in-depth documentation is provided in the rest of this chapter.
+
+```
+> salt help
+Possible commands:
+
+filter -- manage filtering features by adding with one of the following arguments
+       enable -- enable filtering. Only information about filtered processes will be displayed
+       disable -- disable filtering. Information about all processes will be displayed.
+       status -- display current filtering parameters
+       add process/cache <arg>-- add one or more filtering conditions
+       remove process/cache <arg>-- remove one or more filtering conditions
+       relation -- change how the two filters are combined. The default is OR
+              OR -- an event is selected if it satisfied one filter OR the other
+              AND -- an event is selected if it satisfied one filter AND the other
+
+record -- manage recording features by adding with one of the following arguments
+       on -- enable recording. Information about filtered processes will be added to the history
+       off -- disable recording.
+       show -- display the recorded history
+       clear -- delete the recorded history
+
+trace <proc name> -- reset all filters and configure filtering for a specific process
+
+walk -- navigate all active caches and print relevant information
+
+walk_html -- navigate all active caches and generate relevant information in html format
+
+walk_json -- navigate all active caches and generate relevant information in json format
+
+help -- display this message
+
+```
+
 
 ## General functioning
 
@@ -45,7 +78,7 @@ Likewise, for deallocation functions:
 
 I also added a breakpoint to trace the **new_slab** function, that notifies the user when a fresh slab is allocated. This can be useful for monitoring the memory usage of the system, or to set up the environment for an exploit (e.g. the overflow-into-free-object-metadata technique).
 
-### Filtering
+## Filtering
 
 Filtering defines which SLUB events are notified to the user.
 
@@ -67,7 +100,7 @@ A filtering criteria can be removed with `salt filter remove ...` and filtering 
 
 `salt filter status` displays the current state of filtering.
 
-#### Example usage
+### Example usage
 
 ```
 > salt filter enable
@@ -92,7 +125,7 @@ kmem_cache_free is freeing from cache kmalloc-512 on behalf of process "sshd", p
 kmem_cache_free is freeing from cache kmalloc-4096 on behalf of process "snapd", pid 689
 ```
 
-### Recording
+## Recording
 
 Recording provides the ability to generate a *history* of SLUB events from a certain point in time to another.
 
@@ -102,7 +135,7 @@ The history is stored into a data structure and can be displayed with the `salt 
 `salt record clear` clears the current history.
 Starting a recording will not automatically clear the history, but append to it.
 
-#### Example usage
+### Example usage
 
 ```
 > salt record on
@@ -118,7 +151,7 @@ Recording disabled.
 ('kmem_cache_free' , 'blkdev_requests', 'kworker/u2:2', 17816)
 ```
 
-### Tracing
+## Tracing
 
 Tracing is a convenience wrapper around filtering and recording.
 
@@ -128,7 +161,7 @@ By typing `salt trace foobar`, the recording is cleared and started, the filteri
 Additional rules can then be added through the previous commands.  
 This can prove especially useful when developing an exploit or debugging a kernel module.
 
-#### Example usage
+### Example usage
 
 ```
 > salt trace exploit
@@ -152,7 +185,7 @@ kmem_cache_alloc is accessing cache kmalloc-256 on behalf of process "exploit", 
 a new slab is being created for kmalloc-256 on behalf of process "exploit", pid 1087
 ```
 
-### Walking
+## Walking
 
 Walking refers to the process of gathering information about the state of the caches by navigating through the data structures stored in memory.
 
@@ -164,7 +197,7 @@ The `salt walk_json` and `salt walk_html` variants format their output in the re
 
 Since information about *all* caches is rarely relevant, all the previous commands accept a list of cache names, separated by spaces, to use as a filter.
 
-#### Example usage
+### Example usage
 ```
 > salt walk files_cache TCP
   --------------
