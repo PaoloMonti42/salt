@@ -9,7 +9,7 @@ The crucial function that controls the device is ***ioctl***. Through it, the us
 Given the prototype of the function, `static long handle_ioctl(struct file *f, unsigned int cmd, char* arg)`, these are the available commands:
 * cmd #5: look for a cache whose name matches *arg*: if exists, allocate an object of that type, and print its address.
 * cmd #6: list all allocated objects, and their address.
-* cmd #7: free a user specified object. The user can choose allocated objects through an unique ID, referencing it with *arg*.
+* cmd #7: free a user specified object. The user can choose allocated objects through a unique ID, referencing it with *arg*.
 * cmd #8: free all allocated objects.
 
 This is an example output of what the module can do. You can show its output through the `dmesg` command.
@@ -36,9 +36,9 @@ This is an example output of what the module can do. You can show its output thr
 ```
 
 
-For convenience, I also developed an user-space application to control the driver. It sports a nice interface and a small menu. It also provides the ability to read and execute a list of commands from a file, saving the hassle of manually inputting the same (or slightly different) sequence of inputs every time.
+For convenience, I also developed a user-space application to control the driver. It sports a nice interface and a small menu. It also provides the ability to read and execute a list of commands from a file, saving the hassle of manually inputting the same (or slightly different) sequence of inputs every time.
 
-This is an usage example. Since the kernel driver will only show its output through **printk**, keep `dmesg` open to see important information.
+This is a usage example. Since the kernel driver will only show its output through **printk**, keep `dmesg` open to see important information.
 
 ```
 root@ubuntu:~# ./drive

@@ -16,7 +16,7 @@ At this point, there are three options:
 
 ## Setting up the VM
 
-Disclaimer: this is not guaranteed to be the best procedure: the following is the just the list of instructions that brought me to the first working result, stripped of all the unsuccessful tries and failures. There might be, and there probably is, a cleaner, more optimized series of steps: I'm just sharing mine because I know that it works as a whole.
+Disclaimer: this is not guaranteed to be the best procedure: the following is the just the list of instructions that brought me to the first working result, stripped of all the unsuccessful tries. There might be, and there probably is, a cleaner, more optimized series of steps: I'm just sharing mine because I know that overall it work.
 
 
 Download the Ubuntu Server 16.04.3 LTS image from [the official website](https://www.ubuntu.com/download/server) (careful, it might not be the latest version anymore) or just
@@ -37,7 +37,7 @@ $ sudo apt install qemu-system-x86
 $ qemu-system-x86_64 -hda ubuntu.img -cdrom ubuntu-16.04.3-server-amd64.iso -m 1024
  ```
 
-The SLUB allocator is default for this distribution, so we don't need to make any changes in the configuration.
+The SLUB allocator is the default for this distribution, so we don't need to make any changes in the configuration.
 
 
 ### Quality of life improvements
@@ -91,7 +91,7 @@ $ mkdir /tmp/symbols; dpkg -x linux-image-4.4.0-87-generic-dbgsym_4.4.0-87.110_a
 $ cp /tmp/symbols/usr/lib/debug/boot/vmlinux-4.4.0-87-generic .
 ```
 
-Now we can finally put the everything together.
+Now we can finally put everything together.
 After having started qemu and let the kernel boot up, open gdb in another terminal.
 The following commands enable communication between the debugger and the target system.
 ```

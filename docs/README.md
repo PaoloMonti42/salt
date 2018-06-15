@@ -1,4 +1,4 @@
-This folder contains all the documentation
+This folder contains all the documentation.
 It is made up of 4 chapters: their topics are quite separate, but they follow a logical thread that will help you understand the tool development process and philosophy.
 
 They are organized as follows:

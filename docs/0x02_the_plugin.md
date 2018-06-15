@@ -8,7 +8,7 @@
 * [Walking](#walking)
 * [Further work](#further-work)
 
-From now on, it will assumed that you followed the setup in the previous chapter, or that you have your own working environment.
+From now on, it will be assumed that you followed the setup in the previous chapter, or that you have your own working environment.
 
 After opening gdb, connecting it to the kernel, and importing the symbol file, you can initialize the plugin by typing `source salt.py`.
 
@@ -50,7 +50,7 @@ help -- display this message
 ## General functioning
 
 salt works by putting breakpoints in specific functions in the kernel.  
-In order to maximize compatibility with as many systems as possible, breakpoints are only inserted at the beginning or at the end of a function (*finish* breakpoints).
+In order to maximize compatibility with as many Systems as possible, breakpoints are only inserted at the beginning or at the end of a function (*finish* breakpoints).
 Placing them at a specific offset inside the function would be easier and more powerful, but that would only work when the assembly code is identical.
 This isn't feasible given the amount of kernel and compiler variants.
 
@@ -67,7 +67,7 @@ Sadly, this function is defined as *inline*, so determining its arguments and it
 Going back one step, the kernel APIs that make use of this function are **kmem_cache_alloc** and **kmalloc**.
 
 Albeit similar, I had to follow some different approaches for tracing the unfolding of those functions:
-* kmem_cache_alloc -> luckily, this procedure already receives as an argument the address of the target cache to allocate to: every useful information can be gathered at the beginning. XXX return.
+* kmem_cache_alloc -> luckily, this procedure already receives as an argument the address of the target cache to allocate to: every useful information can be gathered at the beginning.
 
 * kmalloc -> in this case, the caller does not specify (nor know) the target cache; it only passes the size of the desired object, and then the function computes the target cache through **kmalloc_slab()**. Information can only be retrieved at that point, so it's necessary to use a *finish* breakpoint at its return point. Also, in the case of preemption, some desynchronization can happen, so that needs to be handled.
 
