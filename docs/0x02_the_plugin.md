@@ -173,7 +173,7 @@ Subfilter relation set to AND.
 > salt filter status
 Filtering is on.
 Tracing information will be displayed for the following processes: exploit
-Tracing information will be displayed for the following caches: kmalloc-2048
+Tracing information will be displayed for the following caches: kmalloc-256
 Subfilter relation is set to AND.
 > continue
 ...
