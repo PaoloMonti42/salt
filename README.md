@@ -14,7 +14,7 @@ Many thanks to my supervisor [Yanick](https://www.eurecom.fr/fr/people/fratanton
 
 ## Presentation
 
-As part of my project, I also gave a presentation to the security team of EURECOM. The slides are available [here](XXX).
+As part of my project, I also gave a presentation to the security team of EURECOM. The slides are available [here](presentation.pdf).
 
 ## Sources
 

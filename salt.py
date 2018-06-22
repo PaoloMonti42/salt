@@ -130,15 +130,16 @@ def walk_caches_html(targets):
 <tr><th colspan="4">slab_caches</th></tr>
 </table>\n\t\t\t\t\t\t<br></br>\n""")
   for n,c in enumerate(salt_caches[1:]):
-    if (targets == None or c['name'] in targets) and len(c['freelist']) == 0:
-      g.write("""<table width="300px">
+    if targets == None or c['name'] in targets:
+      if len(c['freelist']) == 0:
+        g.write("""<table width="300px">
 <tr><th colspan="4">{}</th></tr>
 <tr><td class="mytd">size</td><td class="mytd">{}</td><td class="mytd">offset</td><td class="mytd">{}</td></tr>
 <tr><td class="mytd">freelist</td><td class="mytd" colspan="3">{}</td></tr>
 <tr><td class="mytd">next</td><td class="mytd" colspan="3">{}</td></tr>
 </table>\n\t\t\t\t\t\t<br></br>\n""".format(c['name'], c['objsize'], c['offset'], c['first_free'], c['next']))
-    elif (targets == None or ['name'] in targets) and len(c['freelist']) > 0:
-      g.write("""<table><tr><td>
+      else:
+        g.write("""<table><tr><td>
 <table width="300px">
 <tr><th colspan="4">{}</th></tr>
 <tr><td class="mytd">size</td><td class="mytd">{}</td><td class="mytd">offset</td><td class="mytd">{}</td></tr>
@@ -149,9 +150,9 @@ def walk_caches_html(targets):
 </tr></table></td>
 <td><div id="spoiler{}" style="display:none">
 <table>""".format(c['name'], c['objsize'], c['offset'], c['first_free'], c['next'], n, n, n, n))
-      for f in c['freelist']:
-        g.write('\n<td class="mytd">{}</td>'.format(f))
-      g.write("\n</table></div></td></tr></table>\n\t\t\t\t\t\t<br></br>\n")
+        for f in c['freelist']:
+          g.write('\n<td class="mytd">{}</td>'.format(f))
+        g.write("\n</table></div></td></tr></table>\n\t\t\t\t\t\t<br></br>\n")
 
   g.write("\n\n</body></html>\n")
   #g.close()
@@ -174,11 +175,11 @@ def walk_caches_stdout(targets):
   for c in salt_caches[1:]:
     if targets == None or c['name'] in targets:
       print(' |   name:', c['name'])
-      print(' |   fist_free:', c['first_free'])
+      print(' |   first_free:', c['first_free'])
       if len(c['freelist']) > 0:
-        print(' |   freelist: ', c['freelist'][0])
+        print(' |   freelist:  ', c['freelist'][0])
       for f in c['freelist'][1:]:
-        print(' |', ' '*12, f)
+        print(' |', ' '*13, f)
       print(' |   next:', c['next'])
       print(' |', ' '*11, '|')
       if targets != None:
@@ -300,7 +301,7 @@ class newSlabBP(gdb.Breakpoint):
 
     if apply_filter(name, cache):
       trace_info = 'a new slab is being created for ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
-      print(trace_info)
+      print('\033[91m'+trace_info+'\033[0m')
       history.append(('new_slab', cache, name, pid))
     
     return False
@@ -422,6 +423,7 @@ class salt (gdb.Command):
 
         else:
           print('Invalid option. Valid arguments are: on, off, show, clear.') 
+
 
       elif args[0] == 'trace': 
         filter_on = True
