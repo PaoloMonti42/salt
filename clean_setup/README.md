@@ -2,6 +2,8 @@
 
 The files in this folder should allow you to use the tool out of the box.
 
+Since some files are of considerable size, I couldn't upload them on the repository. To get everything ready, execute `./pull.sh`.
+
 In one terminal, run `./qemu.sh`.  This will boot the kernel inside the VM.
 
 Here is a little checklist of things you might want to change:

@@ -18,5 +18,4 @@ set print elements 0
 
 # Set a one-time breakpoint at default_idle, then run until it's hit
 tbreak default_idle
-source XXX
 continue
