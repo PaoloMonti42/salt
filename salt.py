@@ -1,4 +1,4 @@
-import gdb, json
+import gdb, json, datetime
 
 #in order to work with per-cpu variables, we need to resolve some addresses
 #assuming we are working on a mono-cpu system, anyways
@@ -12,7 +12,16 @@ cache_filter = set()
 record_on = False
 history = list()
 filter_rel = "or"
+logfile = None
 
+def salt_print(string):
+  """
+  hook standard printing to enable logging features
+  """
+  gdb.write(string + '\n')
+  if logfile:
+    logfile.write(string + '\n')
+    logfile.flush()
 
 def get_task_info():
   """
@@ -110,9 +119,7 @@ def walk_caches_json(targets):
     if targets == None or c['name'] in targets:
       ret += json.dumps(c)+',\n'
   ret = ret[:-2] + "\n]\n"
-  #g = open('graph.json', 'w') #XXX
   gdb.write(ret)
-  #g.close()
 
 
 def walk_caches_html(targets):
@@ -122,24 +129,22 @@ def walk_caches_html(targets):
   """
   walk_caches()
   
-  #g = open('graph.html', 'w') #XXX
-  g = gdb
-  g.write("""<html> <body> <style> th, .mytd { padding:10px; border: 1px solid black; border-collapse: collapse; } th { text-align:center; } </style>\n\n""")
+  salt_print("""<html> <body> <style> th, .mytd { padding:10px; border: 1px solid black; border-collapse: collapse; } th { text-align:center; } </style>\n""")
 
-  g.write("""<table width="300px">
+  salt_print("""<table width="300px">
 <tr><th colspan="4">slab_caches</th></tr>
-</table>\n\t\t\t\t\t\t<br></br>\n""")
+</table>\n\t\t\t\t\t\t<br></br>""")
   for n,c in enumerate(salt_caches[1:]):
     if targets == None or c['name'] in targets:
       if len(c['freelist']) == 0:
-        g.write("""<table width="300px">
+        salt_print("""<table width="300px">
 <tr><th colspan="4">{}</th></tr>
 <tr><td class="mytd">size</td><td class="mytd">{}</td><td class="mytd">offset</td><td class="mytd">{}</td></tr>
 <tr><td class="mytd">freelist</td><td class="mytd" colspan="3">{}</td></tr>
 <tr><td class="mytd">next</td><td class="mytd" colspan="3">{}</td></tr>
-</table>\n\t\t\t\t\t\t<br></br>\n""".format(c['name'], c['objsize'], c['offset'], c['first_free'], c['next']))
+</table>\n\t\t\t\t\t\t<br></br>""".format(c['name'], c['objsize'], c['offset'], c['first_free'], c['next']))
       else:
-        g.write("""<table><tr><td>
+        salt_print("""<table><tr><td>
 <table width="300px">
 <tr><th colspan="4">{}</th></tr>
 <tr><td class="mytd">size</td><td class="mytd">{}</td><td class="mytd">offset</td><td class="mytd">{}</td></tr>
@@ -151,11 +156,10 @@ def walk_caches_html(targets):
 <td><div id="spoiler{}" style="display:none">
 <table>""".format(c['name'], c['objsize'], c['offset'], c['first_free'], c['next'], n, n, n, n))
         for f in c['freelist']:
-          g.write('\n<td class="mytd">{}</td>'.format(f))
-        g.write("\n</table></div></td></tr></table>\n\t\t\t\t\t\t<br></br>\n")
+          salt_print('\n<td class="mytd">{}</td>'.format(f))
+        salt_print("\n</table></div></td></tr></table>\n\t\t\t\t\t\t<br></br>")
 
-  g.write("\n\n</body></html>\n")
-  #g.close()
+  salt_print("\n\n</body></html>")
 
 def walk_caches_stdout(targets):
   """
@@ -164,29 +168,29 @@ def walk_caches_stdout(targets):
   """
   walk_caches()
   
-  print(' ', '-'*14)
-  print(' |', ' '*11, '|')
-  print(' |        slab_caches')
-  print(' |', ' '*11, '|')
+  salt_print('  ' + '-'*14)
+  salt_print(' | ' + ' '*11 + ' |')
+  salt_print(' |        slab_caches')
+  salt_print(' | ' + ' '*11 + ' |')
   if targets != None:
-    print(' |', ' '*10, '...')
-    print(' |', ' '*11, '|')
-  print(' |', ' '*11, 'v')
+    salt_print(' | ' + ' '*10 + ' ...')
+    salt_print(' | ' + ' '*11 + ' |')
+  salt_print(' | ' + ' '*11 + ' v')
   for c in salt_caches[1:]:
     if targets == None or c['name'] in targets:
-      print(' |   name:', c['name'])
-      print(' |   first_free:', c['first_free'])
+      salt_print(' |   name: ' + c['name'])
+      salt_print(' |   first_free: ' + c['first_free'])
       if len(c['freelist']) > 0:
-        print(' |   freelist:  ', c['freelist'][0])
+        salt_print(' |   freelist:   ' + c['freelist'][0])
       for f in c['freelist'][1:]:
-        print(' |', ' '*13, f)
-      print(' |   next:', c['next'])
-      print(' |', ' '*11, '|')
+        salt_print(' | ' + ' '*13 +  str(f))
+      salt_print(' |   next: ' + c['next'])
+      salt_print(' | ' + ' '*11 + ' |')
       if targets != None:
-        print(' |', ' '*10, '...')
-      print(' |', ' '*11, '|')
-      print(' |', ' '*11, 'v')
-  print('  <' + '-'*13)
+        salt_print(' | ' + ' '*10 + ' ...')
+      salt_print(' | ' + ' '*11 +  ' |')
+      salt_print(' | ' + ' '*11 + ' v')
+  salt_print('  <' + '-'*13)
 
 #returned in case of size 0 allocation requests
 ZERO_SIZE_PTR = 0x10 
@@ -200,14 +204,14 @@ class kmallocSlabFinishBP(gdb.FinishBreakpoint):
     if ret == ZERO_SIZE_PTR:
       if apply_filter(name, -1):
         trace_info = 'kmalloc has been called with argument size=0 by process "' + name + '", pid ' + str(pid)
-        print(trace_info)
+        salt_print(trace_info)
       return False
 
     cache = ret['name'].string()
 
     if apply_filter(name, cache):
       trace_info = 'kmalloc is accessing cache ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
-      print(trace_info)
+      salt_print(trace_info)
       history.append(('kmalloc', cache, name, pid))
 
     return False  
@@ -245,7 +249,7 @@ class kfreeFinishBP(gdb.FinishBreakpoint):
 
     if apply_filter(name, cache):
       trace_info = 'kfree is freeing an object from cache ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
-      print(trace_info)
+      salt_print(trace_info)
       history.append(('kfree', cache, name, pid))
     return False
 
@@ -269,7 +273,7 @@ class kmemCacheAllocBP(gdb.Breakpoint):
     if apply_filter(name, cache):
       trace_info = 'kmem_cache_alloc is accessing cache ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
       #trace_info += '\nreturning object at address ' + str(tohex(ret, 64))
-      print(trace_info)
+      salt_print(trace_info)
       history.append(('kmem_cache_alloc', cache, name, pid))
     
     return False
@@ -287,7 +291,7 @@ class kmemCacheFreeBP(gdb.Breakpoint):
     if apply_filter(name, cache):
       trace_info = 'kmem_cache_free is freeing from cache ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
       #trace_info += '\nfreeing object at address ' + str(x)
-      print(trace_info)
+      salt_print(trace_info)
       history.append(('kmem_cache_free', cache, name, pid))
     
     return False
@@ -301,7 +305,7 @@ class newSlabBP(gdb.Breakpoint):
 
     if apply_filter(name, cache):
       trace_info = 'a new slab is being created for ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
-      print('\033[91m'+trace_info+'\033[0m')
+      salt_print('\033[91m'+trace_info+'\033[0m')
       history.append(('new_slab', cache, name, pid))
     
     return False
@@ -337,20 +341,20 @@ class salt (gdb.Command):
 
         elif args[1] == 'enable':
           filter_on = True
-          print('Filtering enabled.')
+          salt_print('Filtering enabled.')
 
         elif args[1] == 'disable':
           filter_on = False
-          print('Filtering disbled.')
+          salt_print('Filtering disbled.')
 
         elif args[1] == 'status':
           if filter_on:
-            print('Filtering is on.')
-            print('Tracing information will be displayed for the following processes: ' + ', '.join(proc_filter))
-            print('Tracing information will be displayed for the following caches: ' + ', '.join(cache_filter))
-            print('Subfilter relation is set to ' + filter_rel.upper() + '.')
+            salt_print('Filtering is on.')
+            salt_print('Tracing information will be displayed for the following processes: ' + ', '.join(proc_filter))
+            salt_print('Tracing information will be displayed for the following caches: ' + ', '.join(cache_filter))
+            salt_print('Subfilter relation is set to ' + filter_rel.upper() + '.')
           else:
-            print('Filtering is off.')
+            salt_print('Filtering is off.')
 
         elif args[1] == 'add':
           if len(args)<3:
@@ -358,11 +362,11 @@ class salt (gdb.Command):
           elif args[2] == 'process':
             for name in args[3:]:
               proc_filter.add(name)  
-              print("Added '"+ name +"' to filtered processes.")
+              salt_print("Added '"+ name +"' to filtered processes.")
           elif args[2] == 'cache':
             for name in args[3:]:
               cache_filter.add(name)  
-              print("Added '"+ name +"' to filtered caches.")
+              salt_print("Added '"+ name +"' to filtered caches.")
           else:
             print('Invalid option. Valid arguments are: process, cache.')  
 
@@ -373,14 +377,14 @@ class salt (gdb.Command):
             for name in args[3:]:
               try:
                 proc_filter.remove(name)  
-                print("Removed '"+ name +"' from filtered processes.")
+                salt_print("Removed '"+ name +"' from filtered processes.")
               except:
                 print("'"+ name +"' is not among filtered processes.")
           elif args[2] == 'cache':
             for name in args[3:]:
               try:
                 cache_filter.remove(name)  
-                print("Removed '"+ name +"' from filtered processes.")
+                salt_print("Removed '"+ name +"' from filtered processes.")
               except:
                 print("'"+ name +"' is not among filtered processes.")
           else:
@@ -391,15 +395,34 @@ class salt (gdb.Command):
             print('Missing option. Valid arguments are: OR, AND.') 
           elif args[2].lower() == 'or':
             filter_rel = 'or'
-            print('Subfilter relation set to OR.')
+            salt_print('Subfilter relation set to OR.')
           elif args[2].lower() == 'and':
             filter_rel = 'and'
-            print('Subfilter relation set to AND.')
+            salt_print('Subfilter relation set to AND.')
           else:
             print('Invalid option. Valid arguments are: OR, AND.')  
 
         else:
           print('Invalid option. Valid arguments are: enable, disable, status, add, remove, relation.') 
+
+      elif args[0] == 'logging':
+
+        global logfile
+        if len(args)<2:
+          print('Missing option. Specify a filename or the special option "off".')
+
+        elif args[1] == 'off':
+          logfile = None
+          salt_print('Logging disabled.')
+
+        else:
+          try:
+            logfile = open(args[1], 'a')
+            logfile.write('\n' + '='*10 + ' New logging session: {:%Y-%m-%d %H:%M:%S} '.format(datetime.datetime.now()) + '='*10 + '\n')
+            salt_print('Logging enabled on ' + args[1] + '.')
+          except:
+            print("Error while opening " + args[1] + " in write mode.")
+            logfile = None
 
       elif args[0] == 'record':
 
@@ -408,15 +431,15 @@ class salt (gdb.Command):
 
         elif args[1] == 'on':
           record_on = True
-          print('Recording enabled.')
+          salt_print('Recording enabled.')
 
         elif args[1] == 'off':
           record_on = False
-          print('Recording disabled.')
+          salt_print('Recording disabled.')
 
         elif args[1] == 'show':
           for event in history:
-            print(event)
+            salt_print(event)
 
         elif args[1] == 'clear':
           history = list()
@@ -433,7 +456,7 @@ class salt (gdb.Command):
           proc_filter.add(name)  
         record_on = True
         history = list()
-        print('Tracing enabled.')
+        salt_print('Tracing enabled.')
 
       elif args[0] == 'walk': 
         if len(args)>1:
@@ -469,6 +492,9 @@ class salt (gdb.Command):
         print('       off -- disable recording.')
         print('       show -- display the recorded history')
         print('       clear -- delete the recorded history')
+        print('\nlogging -- duplicate the program\'s output to a log file')
+        print('       filename -- start appending to the specified file. A marker will be inserted to separate sessions.')
+        print('       off -- disable logging')
         print('\ntrace <proc name> -- reset all filters and configure filtering for a specific process')
         print('\nwalk -- navigate all active caches and print relevant information')
         print('\nwalk_html -- navigate all active caches and generate relevant information in html format')
@@ -480,7 +506,7 @@ class salt (gdb.Command):
   def complete(self, text, word):
     ret = []
     if text == word:
-      for w in ['filter', 'record', 'trace', 'walk', 'walk_html', 'walk_json', 'help']:
+      for w in ['filter', 'record', 'logging', 'trace', 'walk', 'walk_html', 'walk_json', 'help']:
         if word == w[:len(word)]:
           ret.append(w)
 
