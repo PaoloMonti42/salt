@@ -1,8 +1,9 @@
 import gdb, json, datetime
+from string import punctuation
 
 #in order to work with per-cpu variables, we need to resolve some addresses
 #assuming we are working on a mono-cpu system, anyways
-cpu0_offset = gdb.lookup_global_symbol('__per_cpu_offset').value()[0]  
+cpu0_offset = gdb.lookup_global_symbol('__per_cpu_offset').value()[0]
 current_task_offset = gdb.lookup_global_symbol('current_task').value().address
 current_task_ptr_ptr = cpu0_offset/8 + current_task_offset  #the /8 is to account for pointer arithmetic, <struct task_struct **> has size 8
 
@@ -11,7 +12,6 @@ proc_filter = set()
 cache_filter = set()
 record_on = False
 history = list()
-filter_rel = "or"
 logfile = None
 
 def salt_print(string):
@@ -31,7 +31,7 @@ def get_task_info():
   current = current_task_ptr_ptr.dereference().dereference()
   name = current['comm'].string()
   pid = int(current['pid'])
-  return (name, pid)   
+  return (name, pid)
 
 def tohex(val, nbits):
   """
@@ -42,21 +42,16 @@ def tohex(val, nbits):
 def apply_filter(proc, cache):
   """
   apply current filtering rules on the given item
-  depending on the chosen relationship. the conditions can be combined as AND or OR
   """
-  if filter_on: 
-    if filter_rel == 'or':
-      if proc in proc_filter or cache in cache_filter:
-        return True
-    else: 
-      if proc in proc_filter and cache in cache_filter:
-        return True
+  if filter_on:
+    if proc in proc_filter or cache in cache_filter:
+      return True
   else:
     return True
   return False
 
-#compute at runtime the offset of the 'list' field in 'kmem_cache' structs    
-list_offset = [f.bitpos for f in gdb.lookup_type('struct kmem_cache').fields() if f.name == 'list'][0] 
+#compute at runtime the offset of the 'list' field in 'kmem_cache' structs
+list_offset = [f.bitpos for f in gdb.lookup_type('struct kmem_cache').fields() if f.name == 'list'][0]
 
 def get_next_cache(c1):
   """
@@ -66,17 +61,17 @@ def get_next_cache(c1):
   nxt = c1['list']['next']
   c2 = gdb.Value(int(nxt)-list_offset//8).cast(gdb.lookup_type('struct kmem_cache').pointer())
   return c2
-  
+
 salt_caches = []
 
 def walk_caches():
   """
-  walk through all the active kmem caches and collect information about them 
+  walk through all the active kmem caches and collect information about them
   this function fills a data structure, used later by the other walk_* functions
   """
   global salt_caches
   salt_caches = []
-  
+
   slab_caches = gdb.lookup_global_symbol('slab_caches').value().address
   salt_caches.append(dict())
   salt_caches[-1]['name'] = 'slab_caches'
@@ -128,7 +123,7 @@ def walk_caches_html(targets):
   if some cache names are specified, the rest will be filtered out
   """
   walk_caches()
-  
+
   salt_print("""<html> <body> <style> th, .mytd { padding:10px; border: 1px solid black; border-collapse: collapse; } th { text-align:center; } </style>\n""")
 
   salt_print("""<table width="300px">
@@ -163,11 +158,11 @@ def walk_caches_html(targets):
 
 def walk_caches_stdout(targets):
   """
-  display the state of the target caches in a human friendly format 
+  display the state of the target caches in a human friendly format
   if some cache names are specified, the rest will be filtered out
   """
   walk_caches()
-  
+
   salt_print('  ' + '-'*14)
   salt_print(' | ' + ' '*11 + ' |')
   salt_print(' |        slab_caches')
@@ -193,12 +188,12 @@ def walk_caches_stdout(targets):
   salt_print('  <' + '-'*13)
 
 #returned in case of size 0 allocation requests
-ZERO_SIZE_PTR = 0x10 
+ZERO_SIZE_PTR = 0x10
 
 class kmallocSlabFinishBP(gdb.FinishBreakpoint):
 
   def stop(self):
-    name, pid = get_task_info()  
+    name, pid = get_task_info()
 
     ret = self.return_value
     if ret == ZERO_SIZE_PTR:
@@ -214,7 +209,7 @@ class kmallocSlabFinishBP(gdb.FinishBreakpoint):
       salt_print(trace_info)
       history.append(('kmalloc', cache, name, pid))
 
-    return False  
+    return False
 
 flag = 0
 class kmallocSlabBP(gdb.Breakpoint):
@@ -245,7 +240,7 @@ class kfreeFinishBP(gdb.FinishBreakpoint):
     cache = rdi.cast(gdb.lookup_type('struct kmem_cache').pointer()).dereference()
     cache = cache['name'].string()
 
-    name, pid = get_task_info()  
+    name, pid = get_task_info()
 
     if apply_filter(name, cache):
       trace_info = 'kfree is freeing an object from cache ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
@@ -256,7 +251,7 @@ class kfreeFinishBP(gdb.FinishBreakpoint):
 class kfreeBP(gdb.Breakpoint):
 
   def stop(self):
-    kfreeFinishBP(internal=True) 
+    kfreeFinishBP(internal=True)
     #x = gdb.selected_frame().read_var('x')
     #trace_info = 'freeing object at address ' + str(x)
     return False
@@ -267,7 +262,7 @@ class kmemCacheAllocBP(gdb.Breakpoint):
   def stop(self):
     s = gdb.selected_frame().read_var('s')
 
-    name, pid = get_task_info()  
+    name, pid = get_task_info()
     cache = s['name'].string()
 
     if apply_filter(name, cache):
@@ -275,7 +270,7 @@ class kmemCacheAllocBP(gdb.Breakpoint):
       #trace_info += '\nreturning object at address ' + str(tohex(ret, 64))
       salt_print(trace_info)
       history.append(('kmem_cache_alloc', cache, name, pid))
-    
+
     return False
 
 
@@ -285,7 +280,7 @@ class kmemCacheFreeBP(gdb.Breakpoint):
     s = gdb.selected_frame().read_var('s')
     x = gdb.selected_frame().read_var('x')
 
-    name, pid = get_task_info()  
+    name, pid = get_task_info()
     cache = s['name'].string()
 
     if apply_filter(name, cache):
@@ -293,25 +288,25 @@ class kmemCacheFreeBP(gdb.Breakpoint):
       #trace_info += '\nfreeing object at address ' + str(x)
       salt_print(trace_info)
       history.append(('kmem_cache_free', cache, name, pid))
-    
+
     return False
 
 class newSlabBP(gdb.Breakpoint):
-  
+
   def stop(self):
     s = gdb.selected_frame().read_var('s')
-    name, pid = get_task_info()  
+    name, pid = get_task_info()
     cache = s['name'].string()
 
     if apply_filter(name, cache):
       trace_info = 'a new slab is being created for ' + cache  + ' on behalf of process "' + name + '", pid ' + str(pid)
       salt_print('\033[91m'+trace_info+'\033[0m')
       history.append(('new_slab', cache, name, pid))
-    
-    return False
-  
 
-class salt (gdb.Command):     
+    return False
+
+
+class salt (gdb.Command):
 
   def __init__ (self):
     super (salt, self).__init__ ("salt", gdb.COMMAND_USER)
@@ -321,15 +316,14 @@ class salt (gdb.Command):
     kmemCacheAllocBP('kmem_cache_alloc', internal=True)
     kmemCacheFreeBP('kmem_cache_free', internal=True)
     newSlabBP('new_slab', internal=True)
-  
+
   def invoke (self, arg, from_tty):
     if not arg:
-      print('Missing option. Type \"salt help\" for more information.')  
+      print('Missing option. Type \"salt help\" for more information.')
     else:
       global filter_on
       global proc_filter
       global cache_filter
-      global filter_rel
       global record_on
       global history
 
@@ -337,7 +331,7 @@ class salt (gdb.Command):
       if args[0] == 'filter':
 
         if len(args)<2:
-          print('Missing option. Valid arguments are: enable, disable, status, add, remove.') 
+          print('Missing option. Valid arguments are: enable, disable, status, add, remove, set.')
 
         elif args[1] == 'enable':
           filter_on = True
@@ -352,58 +346,66 @@ class salt (gdb.Command):
             salt_print('Filtering is on.')
             salt_print('Tracing information will be displayed for the following processes: ' + ', '.join(proc_filter))
             salt_print('Tracing information will be displayed for the following caches: ' + ', '.join(cache_filter))
-            salt_print('Subfilter relation is set to ' + filter_rel.upper() + '.')
           else:
             salt_print('Filtering is off.')
 
         elif args[1] == 'add':
           if len(args)<3:
-            print('Missing option. Valid arguments are: process, cache.') 
+            print('Missing option. Valid arguments are: process, cache.')
           elif args[2] == 'process':
             for name in args[3:]:
-              proc_filter.add(name)  
+              proc_filter.add(name)
               salt_print("Added '"+ name +"' to filtered processes.")
           elif args[2] == 'cache':
             for name in args[3:]:
-              cache_filter.add(name)  
+              cache_filter.add(name)
               salt_print("Added '"+ name +"' to filtered caches.")
           else:
-            print('Invalid option. Valid arguments are: process, cache.')  
+            print('Invalid option. Valid arguments are: process, cache.')
 
         elif args[1] == 'remove':
           if len(args)<3:
-            print('Missing option. Valid arguments are: process, cache.') 
+            print('Missing option. Valid arguments are: process, cache.')
           elif args[2] == 'process':
             for name in args[3:]:
               try:
-                proc_filter.remove(name)  
+                proc_filter.remove(name)
                 salt_print("Removed '"+ name +"' from filtered processes.")
               except:
                 print("'"+ name +"' is not among filtered processes.")
           elif args[2] == 'cache':
             for name in args[3:]:
               try:
-                cache_filter.remove(name)  
+                cache_filter.remove(name)
                 salt_print("Removed '"+ name +"' from filtered processes.")
               except:
                 print("'"+ name +"' is not among filtered processes.")
           else:
-            print('Invalid option. Valid arguments are: process, cache.')  
+            print('Invalid option. Valid arguments are: process, cache.')
 
-        elif args[1] == 'relation':
+        elif args[1] == 'set':
           if len(args)<3:
-            print('Missing option. Valid arguments are: OR, AND.') 
-          elif args[2].lower() == 'or':
-            filter_rel = 'or'
-            salt_print('Subfilter relation set to OR.')
-          elif args[2].lower() == 'and':
-            filter_rel = 'and'
-            salt_print('Subfilter relation set to AND.')
+            print('Missing option. Please specify the filter.')
           else:
-            print('Invalid option. Valid arguments are: OR, AND.')  
+            and_words = ['and', 'AND', '&', '&&']
+            stopwords = ['\'', '"', '(', ')', ',', 'or', 'OR', '|', '||']
+            l = ' '.join(args[2:]).split()
+            and_word = next((w for w in l if w in and_words), None)
+            if (and_word == None):
+              print('No "and" word found. Consider using "salt filter add" for simple rules.')
+            else:
+              caches = [l[i] for i in range(len(l)) if i < l.index(and_word) and l[i] not in stopwords]
+              cache_filter = set()
+              for c in caches:
+                cache_filter.add(c.strip(punctuation))
+              processes = [l[i] for i in range(len(l)) if i > l.index(and_word) and l[i] not in stopwords]
+              proc_filter = set()
+              for p in processes:
+                proc_filter.add(p.strip(punctuation))
+              filter_on = True
 
         else:
-          print('Invalid option. Valid arguments are: enable, disable, status, add, remove, relation.') 
+          print('Invalid option. Valid arguments are: enable, disable, status, add, remove, set.')
 
       elif args[0] == 'logging':
 
@@ -427,7 +429,7 @@ class salt (gdb.Command):
       elif args[0] == 'record':
 
         if len(args)<2:
-          print('Missing option. Valid arguments are: on, off, show, clear.') 
+          print('Missing option. Valid arguments are: on, off, show, clear.')
 
         elif args[1] == 'on':
           record_on = True
@@ -445,38 +447,38 @@ class salt (gdb.Command):
           history = list()
 
         else:
-          print('Invalid option. Valid arguments are: on, off, show, clear.') 
+          print('Invalid option. Valid arguments are: on, off, show, clear.')
 
 
-      elif args[0] == 'trace': 
+      elif args[0] == 'trace':
         filter_on = True
         proc_filter = set()
         cache_filter = set()
         for name in args[1:]:
-          proc_filter.add(name)  
+          proc_filter.add(name)
         record_on = True
         history = list()
         salt_print('Tracing enabled.')
 
-      elif args[0] == 'walk': 
+      elif args[0] == 'walk':
         if len(args)>1:
           walk_caches_stdout(args[1:])
         else:
           walk_caches_stdout(None)
 
-      elif args[0] == 'walk_html': 
+      elif args[0] == 'walk_html':
         if len(args)>1:
           walk_caches_html(args[1:])
         else:
           walk_caches_html(None)
 
-      elif args[0] == 'walk_json': 
+      elif args[0] == 'walk_json':
         if len(args)>1:
           walk_caches_json(args[1:])
         else:
           walk_caches_json(None)
 
-      elif args[0] == 'help': 
+      elif args[0] == 'help':
         print('Possible commands:')
         print('\nfilter -- manage filtering features by adding with one of the following arguments')
         print('       enable -- enable filtering. Only information about filtered processes will be displayed')
@@ -484,9 +486,8 @@ class salt (gdb.Command):
         print('       status -- display current filtering parameters')
         print('       add process/cache <arg>-- add one or more filtering conditions')
         print('       remove process/cache <arg>-- remove one or more filtering conditions')
-        print('       relation -- change how the two filters are combined. The default is OR')
-        print('              OR -- an event is selected if it satisfied one filter OR the other')
-        print('              AND -- an event is selected if it satisfied one filter AND the other')
+        print('       set -- specify complex filtering rules. The supported syntax is "salt filter set (cache1 or cache2) and (process1 or process2)".')
+        print('              Some variations might be accepted. Checking with "salt filter status" is recommended. For simpler rules use "salt filter add".')
         print('\nrecord -- manage recording features by adding with one of the following arguments')
         print('       on -- enable recording. Information about filtered processes will be added to the history')
         print('       off -- disable recording.')
@@ -501,7 +502,7 @@ class salt (gdb.Command):
         print('\nwalk_json -- navigate all active caches and generate relevant information in json format')
         print('\nhelp -- display this message')
       else:
-        print('Invalid option. Type \"salt help\" for more information.')  
+        print('Invalid option. Type \"salt help\" for more information.')
 
   def complete(self, text, word):
     ret = []
@@ -513,30 +514,24 @@ class salt (gdb.Command):
     else:
       comm = text.split()[0]
       if comm == 'filter':
-        if len(text.split())==1 or text.split()[1] not in ['enable', 'disable', 'status', 'add', 'remove', 'relation']:
-          for w in ['enable', 'disable', 'status', 'add', 'remove', 'relation']:
+        if len(text.split())==1 or text.split()[1] not in ['enable', 'disable', 'status', 'add', 'remove', 'set']:
+          for w in ['enable', 'disable', 'status', 'add', 'remove', 'set']:
             if word == w[:len(word)]:
               ret.append(w)
         else:
           if len(text.split())==3 and word == '':
-            return ret 
+            return ret
           comm = text.split()[1]
           if comm == 'add' or comm == 'remove':
             for w in ['process', 'cache']:
               if word == w[:len(word)]:
                 ret.append(w)
-          elif comm == 'relation':
-            for w in ['OR', 'AND']:
-              if word == w[:len(word)]:
-                ret.append(w)
-            
+
       elif comm == 'record':
         for w in ['on', 'off', 'show', 'clear']:
           if word == w[:len(word)]:
             ret.append(w)
-      
+
     return ret
 
 salt()
-
-
