@@ -3,7 +3,7 @@ Welcome to ***salt***, a tool for kernel heap memory reversing.
 This project is implemented as a gdb plugin that helps analyze and trace the state of the SLUB allocator in modern linux kernels.   
 This can be useful when developing an exploit, or even debugging your own kernel code.
 
-![screenshot](docs/img/readme.png)
+![screenshot](docs/img/frontpage.png)
 
 While working on the tool, I also developed a loadable kernel module that can trigger allocations and deallocations at will, to serve both as a debugging tool and a playground to better understand the inner workings of the allocator system.
 
