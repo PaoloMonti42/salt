@@ -44,7 +44,9 @@ def apply_filter(proc, cache):
   apply current filtering rules on the given item
   """
   if filter_on:
-    if proc in proc_filter or cache in cache_filter:
+    if ((proc in proc_filter and cache in cache_filter) or
+       (proc in proc_filter and len(cache_filter) == 0) or
+       (cache in cache_filter and len(proc_filter) == 0)):
       return True
   else:
     return True
@@ -178,7 +180,7 @@ def walk_caches_stdout(targets):
       if len(c['freelist']) > 0:
         salt_print(' |   freelist:   ' + c['freelist'][0])
       for f in c['freelist'][1:]:
-        salt_print(' | ' + ' '*13 +  str(f))
+        salt_print(' | ' + ' '*14 +  str(f))
       salt_print(' |   next: ' + c['next'])
       salt_print(' | ' + ' '*11 + ' |')
       if targets != None:
