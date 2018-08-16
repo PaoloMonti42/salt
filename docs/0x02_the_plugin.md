@@ -93,8 +93,13 @@ At the moment, there are two possibilities:
 
 Both command variations accept a list of targets separated by spaces.
 
-Also, the user can select how to combine the two *subfilters*. By default they follow an **OR** relationship: an event that satisfies at least one of the criteria will go through the filter and generate a message.  
-This behavior can be overridden by typing `salt filter relation OR/AND`.
+For more complex filtering rules, the `salt filter set` command is provided.
+
+The syntax is fixed, but should cover most realistic cases in combination with the previous commands. 
+Executing `salt filter set (cache1 or cache2 or ...) and (process1 or process2 or ...)` will signal the event when the condition is met.
+
+The command is a bit flexible for delimiters and keywords, but it is always expecting some kind of `and` between caches and processes. 
+For more simple filters involving only one of the sides, use the `salt filter add ...` commands. 
 
 A filtering criteria can be removed with `salt filter remove ...` and filtering can be disabled altogether with `salt filter disable` (criteria will be saved and applied the next time filtering will be re-enabled).
 
@@ -113,7 +118,6 @@ Added 'kmalloc-4096' to filtered caches.
 Filtering is on.
 Tracing information will be displayed for the following processes: sshd
 Tracing information will be displayed for the following caches: kmalloc-4096
-Subfilter relation is set to AND.
 > continue
 ...
 kmem_cache_free is freeing from cache kmalloc-256 on behalf of process "sshd", pid 1022
