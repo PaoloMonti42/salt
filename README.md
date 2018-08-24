@@ -21,9 +21,9 @@ filter -- manage filtering features by adding with one of the following argument
        status -- display current filtering parameters
        add process/cache <arg>-- add one or more filtering conditions
        remove process/cache <arg>-- remove one or more filtering conditions
-       relation -- change how the two filters are combined. The default is OR
-              OR -- an event is selected if it satisfied one filter OR the other
-              AND -- an event is selected if it satisfied one filter AND the other
+       set -- specify complex filtering rules. The supported syntax is "salt filter set (cache1 or cache2) and (process1 or process2)".
+       Some variations might be accepted. Checking with "salt filter status" is recommended. For simpler rules use "salt filter add".
+
 
 record -- manage recording features by adding with one of the following arguments
        on -- enable recording. Information about filtered processes will be added to the history
