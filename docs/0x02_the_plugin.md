@@ -50,7 +50,7 @@ help -- display this message
 ## General functioning
 
 salt works by putting breakpoints in specific functions in the kernel.  
-In order to maximize compatibility with as many Systems as possible, breakpoints are only inserted at the beginning or at the end of a function (*finish* breakpoints).
+In order to maximize compatibility with as many systems as possible, breakpoints are only inserted at the beginning or at the end of a function (*finish* breakpoints).
 Placing them at a specific offset inside the function would be easier and more powerful, but that would only work when the assembly code is identical.
 This isn't feasible given the amount of kernel and compiler variants.
 
