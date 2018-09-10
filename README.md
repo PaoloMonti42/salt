@@ -51,7 +51,7 @@ And here you can see salt in action:
 
 
 This project was developed at [EURECOM](http://www.eurecom.fr/en) as a semester project for Spring 2018.  
-Many thanks to my supervisors [Yanick](http://www.s3.eurecom.fr/~yanick/), [Fabio](http://www.s3.eurecom.fr/~pagabuc/), [Emanuele](http://www.s3.eurecom.fr/~invano/), [Dario](http://s3.eurecom.fr/~darion/), [Marius](http://s3.eurecom.fr/~muench/), and to the rest of the [S3 team](http://s3.eurecom.fr) that helped and followed me.
+Many thanks to my supervisors [Yanick](http://www.s3.eurecom.fr/~yanick/), [Fabio](http://www.s3.eurecom.fr/~pagabuc/), [Emanuele](https://twitter.com/invano), [Dario](https://twitter.com/_DarioNisi), [Marius](http://s3.eurecom.fr/~muench/), and to the rest of the [S3 team](http://s3.eurecom.fr) that helped and followed me.
 
 ## Presentation
 
